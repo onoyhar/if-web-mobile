@@ -1,7 +1,9 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
-  const { data, error } = await supabaseAdmin.auth.admin.createUser({
+  const { data, error } = await supabaseAdmin().auth.admin.createUser({
     email: "admin@if-app.com",
     password: "Admin123!",
     email_confirm: true,

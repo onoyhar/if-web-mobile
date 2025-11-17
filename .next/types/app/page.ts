@@ -1,4 +1,4 @@
-// File: /Users/mekari/personal-saved/if-pwa/app/page.tsx
+// File: /Users/mekari/personal-saved/if-web-mobile/app/page.tsx
 import * as entry from '../../../app/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

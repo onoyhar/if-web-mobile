@@ -107,7 +107,7 @@ export default function FastingTimer() {
   const handleStop = () => {
     const now = new Date();
     const updated = getFastingLogs().map((l) =>
-      l.status === "running" ? { ...l, status: "completed", end: now.toISOString() } : l
+      l.status === "running" ? { ...l, status: "completed" as const, end: now.toISOString() } : l
     );
 
     setFastingLogs(updated);

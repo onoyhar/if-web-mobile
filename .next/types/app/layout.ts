@@ -1,4 +1,4 @@
-// File: /Users/mekari/personal-saved/if-pwa/app/layout.tsx
+// File: /Users/mekari/personal-saved/if-web-mobile/app/layout.tsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

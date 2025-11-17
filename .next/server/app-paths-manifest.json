@@ -1,7 +1,12 @@
 {
+  "/api/sync/route": "app/api/sync/route.js",
+  "/api/push/subscribe/route": "app/api/push/subscribe/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/setup-admin/route": "app/api/setup-admin/route.js",
+  "/exercise/[id]/page": "app/exercise/[id]/page.js",
   "/page": "app/page.js",
   "/login/page": "app/login/page.js",
+  "/exercise/page": "app/exercise/page.js",
   "/profile/page": "app/profile/page.js",
-  "/settings/page": "app/settings/page.js",
-  "/exercise/page": "app/exercise/page.js"
+  "/settings/page": "app/settings/page.js"
 }
