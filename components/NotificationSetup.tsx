@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "./ui/button";
 
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
 
 async function subscribeUser() {
   if (!("serviceWorker" in navigator)) return;

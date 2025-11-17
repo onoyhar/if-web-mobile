@@ -49,8 +49,8 @@ A modern Progressive Web App (PWA) built with Next.js 15 and Supabase for tracki
    
    Create `.env.local` file in the root directory:
    ```env
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   SUPABASE_URL=your_supabase_project_url
+   SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
 
 4. **Setup Supabase database**
