@@ -1,0 +1,9 @@
+{
+  "name": "IF Health Tracker",
+  "short_name": "IF Tracker",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f3ff",
+  "theme_color": "#7F4AD9",
+  "icons": []
+}
