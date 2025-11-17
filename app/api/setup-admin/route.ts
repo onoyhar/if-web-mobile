@@ -4,7 +4,7 @@ export async function GET() {
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
     email: "admin@if-app.com",
     password: "Admin123!",
-    email_confirmed: true,
+    email_confirm: true,
     user_metadata: {
       role: "admin"
     }
