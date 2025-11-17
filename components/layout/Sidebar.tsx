@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { X, Dumbbell, User, Target } from "lucide-react";
+import { X, Dumbbell, User, Target, LogOut } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 
 type SidebarProps = {
   open: boolean;
@@ -9,6 +11,14 @@ type SidebarProps = {
 };
 
 export default function Sidebar({ open, onClose }: SidebarProps) {
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    onClose();
+    router.push("/login");
+  };
+
   if (!open) return null;
 
   return (
@@ -49,8 +59,21 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           </SidebarItem>
         </nav>
 
+        {/* Logout Button */}
+        <div className="mt-auto pt-4 border-t border-slate-200 dark:border-slate-700">
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-xl px-2 py-2 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors text-red-600 dark:text-red-400"
+          >
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-50 dark:bg-red-950/30">
+              <LogOut className="h-4 w-4" />
+            </span>
+            <span className="text-sm font-medium">Logout</span>
+          </button>
+        </div>
+
         {/* Footer Info */}
-        <div className="mt-auto pt-4 text-[11px] text-slate-500 dark:text-slate-400">
+        <div className="pt-3 text-[11px] text-slate-500 dark:text-slate-400">
           IF Health Tracker • v1.0
         </div>
       </aside>
