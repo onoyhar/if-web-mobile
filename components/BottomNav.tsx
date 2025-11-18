@@ -17,7 +17,7 @@ export default function BottomNav() {
     { href: "/", label: "Home", icon: Home },
     { href: "/explore", label: "Explore", icon: Compass },
     { href: "/report", label: "Report", icon: BarChart2 },
-    { href: "/profile", label: "Account", icon: User },
+    { href: "/account", label: "Account", icon: User },
   ];
 
   return (

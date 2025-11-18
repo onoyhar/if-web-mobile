@@ -3,9 +3,6 @@
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import Card from "@/components/ui/card";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -14,7 +11,6 @@ export default function LoginPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const router = useRouter();
 
-  // Default test credentials
   const DEFAULT_EMAIL = "test@example.com";
   const DEFAULT_PASSWORD = "Test123456";
 
@@ -33,32 +29,29 @@ export default function LoginPage() {
         email,
         password
       });
+
       if (error) {
         alert(`Signup error: ${error.message}`);
         return;
       }
-      
+
       if (data.user) {
-        // Create profile entry for new user
-        const { error: profileError } = await supabase.from("users_profile").insert({
+        await supabase.from("users_profile").upsert({
           id: data.user.id,
           email: data.user.email,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
-        
-        if (profileError) {
-          console.error("Profile creation error:", profileError);
-          alert(`Profile setup error: ${profileError.message}\n\nYou can still use the app - your profile will be created when you visit the profile page.`);
-        }
-        
-        router.push("/profile");
+
+        router.push("/account/personal-info");
       }
-    } else {
+    } 
+    else {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
+
       if (error) {
         alert(`Login error: ${error.message}`);
       } else {
@@ -69,111 +62,130 @@ export default function LoginPage() {
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
+
     if (error) {
       alert(error.message);
-    } else {
-      setIsLoggedIn(false);
-      router.push("/login");
+      return;
     }
+
+    // Reset local state
+    setIsLoggedIn(false);
+    setEmail("");
+    setPassword("");
+
+    // Redirect to home
+    router.replace("/");
   };
 
   const handleQuickLogin = async () => {
     setEmail(DEFAULT_EMAIL);
     setPassword(DEFAULT_PASSWORD);
-    
-    const { data, error } = await supabase.auth.signInWithPassword({
+
+    const { error } = await supabase.auth.signInWithPassword({
       email: DEFAULT_EMAIL,
       password: DEFAULT_PASSWORD
     });
-    
-    if (error) {
-      alert(`Quick login error: ${error.message}\n\nPlease create the default user first:\n1. Go to Supabase Dashboard → Authentication → Users\n2. Add user: ${DEFAULT_EMAIL}\n3. Password: ${DEFAULT_PASSWORD}\n4. Auto Confirm: YES`);
-    } else {
-      // Reload user profile
-      await checkUser();
+
+    if (!error) {
       router.push("/");
     }
   };
 
   return (
-    <div className="flex justify-center mt-10">
-      <Card>
-        {isLoggedIn ? (
-          <div className="space-y-4">
-            <h1 className="text-lg font-semibold text-center">
-              You are already logged in
-            </h1>
-            <div className="space-y-2">
-              <Button 
-                className="w-full bg-brandPurple text-white hover:bg-brandLavender" 
-                onClick={() => router.push("/")}
-              >
-                Go to Home
-              </Button>
-              <Button 
-                className="w-full bg-slate-500 text-white hover:bg-slate-600" 
-                onClick={() => router.push("/profile")}
-              >
-                View Profile
-              </Button>
-              <Button 
-                className="w-full bg-red-500 text-white hover:bg-red-600" 
-                onClick={handleLogout}
-              >
-                Logout
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <>
-            <h1 className="text-lg font-semibold text-center">
-              {isSignup ? "Create Account" : "Login"}
-            </h1>
+    <div className="min-h-screen flex items-center justify-center px-6 bg-background">
 
-            <div className="space-y-3 mt-4">
-              <Input
-                placeholder="Email"
+      <div className="w-full max-w-sm bg-white/5 dark:bg-black/40 backdrop-blur-xl
+                      rounded-3xl p-6 shadow-xl border border-white/10 space-y-5">
+
+        {/* Title */}
+        <h1 className="text-center text-2xl font-bold text-white">
+          {isSignup ? "Create Account" : "Login"}
+        </h1>
+
+        {/* FORM AREA */}
+        {!isLoggedIn ? (
+          <>
+            <div className="space-y-3">
+              {/* Email */}
+              <input
                 type="email"
+                placeholder="Email"
+                className="w-full p-3 rounded-xl bg-white/10 border border-white/20 
+                           text-white placeholder-white/40 outline-none focus:border-purple-500"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
               />
 
-              <Input
-                placeholder="Password"
+              {/* Password */}
+              <input
                 type="password"
+                placeholder="Password"
+                className="w-full p-3 rounded-xl bg-white/10 border border-white/20 
+                           text-white placeholder-white/40 outline-none focus:border-purple-500"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
               />
 
-              <Button className="w-full bg-brandPurple text-white" onClick={handleSubmit}>
+              {/* Button */}
+              <button
+                onClick={handleSubmit}
+                className="w-full py-3 bg-purple-600 text-white rounded-xl font-semibold shadow active:scale-95"
+              >
                 {isSignup ? "Sign Up" : "Login"}
-              </Button>
+              </button>
             </div>
 
+            {/* Toggle Signup/Login */}
             <button
-              className="text-xs mt-2 text-sky-500"
+              className="text-xs text-purple-300 underline text-center w-full"
               onClick={() => setIsSignup(!isSignup)}
             >
               {isSignup ? "Already have an account?" : "Create an account"}
             </button>
 
-            {/* Quick Login Button for Testing */}
+            {/* Quick Login */}
             {!isSignup && (
-              <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
-                <p className="text-[10px] text-slate-400 text-center mb-2">
-                  Quick Login (Test User)
-                </p>
-                <Button
-                  className="w-full bg-slate-500 text-white text-xs py-2 hover:bg-slate-600"
+              <>
+                <div className="my-3 border-t border-white/10" />
+                <p className="text-[11px] text-white/50 text-center">Quick Login (Test User)</p>
+
+                <button
                   onClick={handleQuickLogin}
+                  className="w-full py-2.5 rounded-xl bg-white/10 text-white font-medium
+                             border border-white/20 active:scale-95"
                 >
                   Login as test@example.com
-                </Button>
-              </div>
+                </button>
+              </>
             )}
           </>
+        ) : (
+          <>
+            <p className="text-center text-white mb-4">You are already logged in.</p>
+
+            <button
+              className="w-full py-3 bg-purple-600 text-white rounded-xl mb-2"
+              onClick={() => router.push("/")}
+            >
+              Go to Home
+            </button>
+
+            <button
+              className="w-full py-3 bg-slate-500 text-white rounded-xl mb-2"
+              onClick={() => router.push("/account/personal-info")}
+            >
+              View Profile
+            </button>
+
+            <button
+              className="w-full py-3 bg-red-500 text-white rounded-xl"
+              onClick={handleLogout}
+            >
+              Logout
+            </button>
+          </>
         )}
-      </Card>
+      </div>
     </div>
   );
 }
