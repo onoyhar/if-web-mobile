@@ -1,13 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Timer, Menu } from "lucide-react";
+import { Timer } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
-import Sidebar from "@/components/layout/Sidebar";
-import { useState } from "react";
 
 export default function Navbar() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <>
@@ -47,22 +44,12 @@ export default function Navbar() {
             <ThemeToggle />
           </div>
 
-          {/* Right: Mobile - Theme + Burger */}
+          {/* Right: Mobile - Theme only */}
           <div className="flex items-center gap-2 sm:hidden">
             <ThemeToggle />
-            <button
-              type="button"
-              onClick={() => setSidebarOpen(true)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 bg-background shadow-sm hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
-            >
-              <Menu className="h-4 w-4" />
-            </button>
           </div>
         </nav>
       </header>
-
-      {/* Sidebar Drawer */}
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
     </>
   );
 }

@@ -2,126 +2,128 @@
 
 import { useEffect, useState } from "react";
 import Card from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { WeightLog } from "@/lib/types";
 import { getWeightLogs, setWeightLogs, enqueueForSync } from "@/lib/storage";
+import { WeightLog } from "@/lib/types";
 
-function todayKey() {
-  return new Date().toISOString().slice(0, 10);
-}
+const TARGET_WEIGHT = 70; // default target, bisa diambil dari settings nanti
 
 export default function WeightTracker() {
   const [logs, setLogs] = useState<WeightLog[]>([]);
-  const [value, setValue] = useState("");
+  const [weight, setWeight] = useState<number | null>(null);
 
   useEffect(() => {
-    const data = getWeightLogs().sort((a, b) => (b.date > a.date ? 1 : -1));
-    setLogs(data);
-    const today = todayKey();
-    const todayLog = data.find((l) => l.date === today);
-    if (todayLog) setValue(todayLog.weight.toString());
+    const stored = getWeightLogs();
+    setLogs(stored);
+
+    if (stored.length > 0) {
+      setWeight(stored[0].weight); // newest first
+    }
   }, []);
 
-  const handleSave = () => {
-    if (!value) return;
-    const weight = parseFloat(value);
-    if (Number.isNaN(weight)) return;
+  const addWeight = () => {
+    if (!weight) return;
 
-    const today = todayKey();
-    const filtered = logs.filter((l) => l.date !== today);
+    const now = new Date().toISOString();
     const newLog: WeightLog = {
       id: crypto.randomUUID(),
-      date: today,
       weight,
+      date: now,
     };
-    const next = [newLog, ...filtered].sort((a, b) =>
-      b.date > a.date ? 1 : -1
-    );
-    setLogs(next);
-    setWeightLogs(next);
+
+    const updated = [newLog, ...logs];
+    setLogs(updated);
+    setWeightLogs(updated);
 
     enqueueForSync({
       fastingLogs: [],
       waterLogs: [],
-      weightLogs: next,
+      weightLogs: updated,
     });
-
-    if (navigator.onLine) {
-      syncWeight(next).catch(console.error);
-    }
   };
 
+  const lastWeight = logs.length > 1 ? logs[1].weight : weight;
+  const diff = lastWeight && weight ? weight - lastWeight : 0;
+
+  const startWeight = logs.length > 0 ? logs[logs.length - 1].weight : weight ?? 0;
+  const progress = Math.min(
+    100,
+    ((startWeight - (weight ?? startWeight)) /
+      (startWeight - TARGET_WEIGHT || 1)) *
+      100
+  );
+
   return (
-    <Card>
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-50">
-              Weight
-            </h2>
-            <p className="text-[11px] text-slate-500 dark:text-slate-300">
-              Log daily to track your progress.
-            </p>
-          </div>
-          {logs[0] && (
-            <div className="text-right">
-              <p className="text-xs font-semibold text-brandPurple dark:text-brandLavender">
-                {logs[0].weight} kg
-              </p>
-              <p className="text-[10px] text-slate-400">latest</p>
-            </div>
-          )}
-        </div>
+    <Card className="rounded-3xl p-5 bg-gradient-to-b from-[#fff4fc] to-white dark:from-slate-900 dark:to-slate-950 shadow-sm space-y-5">
+      
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <p className="text-xs font-medium text-slate-500">Weight Tracker</p>
+      </div>
 
-        <div className="flex gap-2">
-          <Input
-            placeholder="e.g. 86.2"
-            type="number"
-            step="0.1"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            className="rounded-full bg-white/80 text-sm text-slate-800 dark:bg-[#281a40] dark:text-slate-100"
-          />
-          <Button className="rounded-full bg-brandOrange px-4 text-sm font-semibold text-white hover:bg-[#ff9966]" onClick={handleSave}>
-            Save
-          </Button>
-        </div>
+      {/* Weight display */}
+      <div className="flex flex-col items-center gap-2">
+        <h1 className="text-4xl font-bold text-brandPurple">
+          {weight ? weight.toFixed(1) : "--"}<span className="text-xl">kg</span>
+        </h1>
 
-        <div className="mt-2 space-y-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-            History
+        {diff !== 0 && (
+          <p
+            className={`text-xs font-semibold ${
+              diff < 0 ? "text-green-600" : "text-red-500"
+            }`}
+          >
+            {diff < 0 ? "▼" : "▲"} {Math.abs(diff).toFixed(1)} kg
           </p>
-          <div className="max-h-24 space-y-1 overflow-y-auto text-[11px]">
-            {logs.slice(0, 7).map((l) => (
-              <div
-                key={l.id}
-                className="flex items-center justify-between rounded-xl bg-white/70 px-2 py-1 text-slate-700 dark:bg-[#251938] dark:text-slate-100"
-              >
-                <span>{l.date}</span>
-                <span className="font-mono text-brandPurple dark:text-brandLavender">
-                  {l.weight} kg
-                </span>
-              </div>
-            ))}
-            {logs.length === 0 && (
-              <p className="text-slate-400">No weight logs yet.</p>
-            )}
-          </div>
+        )}
+
+        <p className="text-[11px] text-slate-500">
+          Goal Weight: <span className="font-semibold">{TARGET_WEIGHT} kg</span>
+        </p>
+      </div>
+
+      {/* Progress bar */}
+      <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-3 overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-brandPurple to-brandLavender transition-all duration-500"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+
+      {/* Input weight */}
+      <div className="flex items-center justify-between mt-3">
+        <input
+          type="number"
+          step="0.1"
+          value={weight ?? ""}
+          onChange={(e) => setWeight(Number(e.target.value))}
+          className="w-24 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-sm"
+          placeholder="Weight"
+        />
+
+        <Button
+          className="rounded-full px-6 py-2 bg-brandPurple text-white font-semibold"
+          onClick={addWeight}
+        >
+          Save
+        </Button>
+      </div>
+
+      {/* Start vs target summary */}
+      <div className="flex justify-between text-[11px] text-slate-500 pt-2">
+        <div>
+          <p className="uppercase tracking-wide text-[10px] text-slate-400">
+            Start
+          </p>
+          <p className="font-medium">{startWeight} kg</p>
+        </div>
+        <div>
+          <p className="uppercase tracking-wide text-[10px] text-slate-400">
+            Target
+          </p>
+          <p className="font-medium">{TARGET_WEIGHT} kg</p>
         </div>
       </div>
     </Card>
   );
-}
-
-async function syncWeight(allLogs: WeightLog[]) {
-  await fetch("/api/sync", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      fastingLogs: [],
-      waterLogs: [],
-      weightLogs: allLogs,
-    }),
-  });
 }

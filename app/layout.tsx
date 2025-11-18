@@ -3,6 +3,7 @@ import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import ClientProviders from "@/components/ClientProviders";
+import BottomNav from "@/components/BottomNav";
 
 export const metadata: Metadata = {
   title: "IF Health Tracker",
@@ -18,6 +19,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ServiceWorkerRegister />
           <Navbar />
           <main className="mx-auto max-w-3xl px-4 py-4">{children}</main>
+          {/* Bottom Navigation */}
+          <BottomNav />
         </ClientProviders>
       </body>
     </html>
