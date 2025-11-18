@@ -4,8 +4,18 @@ import FastingTimer from "@/components/trackers/FastingTimer";
 import WaterTracker from "@/components/trackers/WaterTracker";
 import WeightTracker from "@/components/trackers/WeightTracker";
 import Link from "next/link";
+import { useEffect } from "react";
 
 export default function HomePage() {
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const onboard = localStorage.getItem("onboarding");
+      if (!onboard) {
+        window.location.href = "/onboarding";
+      }
+    }
+  }, []);
+
   return (
     <div className="pb-28 px-4 pt-4 max-w-md mx-auto space-y-6">
 

@@ -65,3 +65,12 @@ body {
 .segmented-button-active {
   @apply bg-brandPurple text-white shadow-sm;
 }
+
+@keyframes fadeSlide {
+  0% { opacity: 0; transform: translate(-50%, 10px); }
+  100% { opacity: 1; transform: translate(-50%, 0px); }
+}
+
+.animate-fade-slide {
+  animation: fadeSlide 0.25s ease-out;
+}
