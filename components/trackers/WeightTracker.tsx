@@ -2,126 +2,143 @@
 
 import { useEffect, useState } from "react";
 import Card from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { getWeightLogs, setWeightLogs, enqueueForSync } from "@/lib/storage";
-import { WeightLog } from "@/lib/types";
+import { ChevronRight, Pencil } from "lucide-react";
 
-const TARGET_WEIGHT = 70; // default target, bisa diambil dari settings nanti
+const STORAGE_KEY = "if_weight_logs_v2";
+
+interface WeightLog {
+  date: string;
+  weight: number;
+}
+
+function loadLatest(): WeightLog | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.localStorage.getItem(STORAGE_KEY);
+  if (!raw) return null;
+  try {
+    const logs: WeightLog[] = JSON.parse(raw);
+    if (!logs.length) return null;
+    return logs[logs.length - 1];
+  } catch {
+    return null;
+  }
+}
+
+function saveWeight(weight: number) {
+  if (typeof window === "undefined") return;
+  const raw = window.localStorage.getItem(STORAGE_KEY);
+  const logs: WeightLog[] = raw ? JSON.parse(raw) : [];
+  logs.push({
+    date: new Date().toISOString(),
+    weight,
+  });
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+}
 
 export default function WeightTracker() {
-  const [logs, setLogs] = useState<WeightLog[]>([]);
-  const [weight, setWeight] = useState<number | null>(null);
+  const [goal, setGoal] = useState(70); // default goal
+  const [startWeight, setStartWeight] = useState<number | null>(null);
+  const [currentWeight, setCurrentWeight] = useState<number | null>(null);
+  const [input, setInput] = useState("");
 
   useEffect(() => {
-    const stored = getWeightLogs();
-    setLogs(stored);
-
-    if (stored.length > 0) {
-      setWeight(stored[0].weight); // newest first
+    const last = loadLatest();
+    if (last) {
+      setCurrentWeight(last.weight);
+      if (!startWeight) setStartWeight(last.weight);
     }
   }, []);
 
-  const addWeight = () => {
-    if (!weight) return;
-
-    const now = new Date().toISOString();
-    const newLog: WeightLog = {
-      id: crypto.randomUUID(),
-      weight,
-      date: now,
-    };
-
-    const updated = [newLog, ...logs];
-    setLogs(updated);
-    setWeightLogs(updated);
-
-    enqueueForSync({
-      fastingLogs: [],
-      waterLogs: [],
-      weightLogs: updated,
-    });
+  const handleSave = () => {
+    const w = Number(input);
+    if (!w || isNaN(w)) return;
+    saveWeight(w);
+    setCurrentWeight(w);
+    if (!startWeight) setStartWeight(w);
+    setInput("");
   };
 
-  const lastWeight = logs.length > 1 ? logs[1].weight : weight;
-  const diff = lastWeight && weight ? weight - lastWeight : 0;
+  const percent =
+    currentWeight && startWeight
+      ? Math.min(
+          100,
+          Math.max(
+            0,
+            ((startWeight - currentWeight) / (startWeight - goal || 1)) * 100
+          )
+        )
+      : 0;
 
-  const startWeight = logs.length > 0 ? logs[logs.length - 1].weight : weight ?? 0;
-  const progress = Math.min(
-    100,
-    ((startWeight - (weight ?? startWeight)) /
-      (startWeight - TARGET_WEIGHT || 1)) *
-      100
-  );
+  const difference = currentWeight && startWeight ? startWeight - currentWeight : 0;
+  const isLoss = difference > 0;
 
   return (
-    <Card className="rounded-3xl p-5 bg-gradient-to-b from-[#fff4fc] to-white dark:from-slate-900 dark:to-slate-950 shadow-sm space-y-5">
-      
+    <Card className="rounded-3xl p-5 bg-white dark:bg-slate-900 shadow-sm">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <p className="text-xs font-medium text-slate-500">Weight Tracker</p>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+          Weight Tracker
+        </h2>
+        <button className="text-rose-500 hover:text-rose-600">
+          <ChevronRight className="h-5 w-5" />
+        </button>
       </div>
 
-      {/* Weight display */}
-      <div className="flex flex-col items-center gap-2">
-        <h1 className="text-4xl font-bold text-brandPurple">
-          {weight ? weight.toFixed(1) : "--"}<span className="text-xl">kg</span>
-        </h1>
+      {/* Main display */}
+      <div className="flex items-center justify-between mb-5">
+        {/* Current weight */}
+        <div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-5xl font-bold text-slate-900 dark:text-white">
+              {currentWeight ? currentWeight.toFixed(1) : "0.0"}
+            </span>
+            <span className="text-lg text-slate-400">kg</span>
+          </div>
+          
+          {/* Difference badge */}
+          {difference !== 0 && (
+            <div className={`inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-full text-xs font-medium ${
+              isLoss 
+                ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400' 
+                : 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400'
+            }`}>
+              <span>{isLoss ? '↓' : '↑'}</span>
+              <span>{Math.abs(difference).toFixed(1)} kg</span>
+            </div>
+          )}
+        </div>
 
-        {diff !== 0 && (
-          <p
-            className={`text-xs font-semibold ${
-              diff < 0 ? "text-green-600" : "text-red-500"
-            }`}
-          >
-            {diff < 0 ? "▼" : "▲"} {Math.abs(diff).toFixed(1)} kg
-          </p>
-        )}
-
-        <p className="text-[11px] text-slate-500">
-          Goal Weight: <span className="font-semibold">{TARGET_WEIGHT} kg</span>
-        </p>
+        {/* Edit button */}
+        <button
+          onClick={() => {
+            const newWeight = prompt("Enter current weight (kg):", currentWeight?.toString() || "");
+            if (newWeight) handleSave();
+          }}
+          className="p-3 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700"
+        >
+          <Pencil className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+        </button>
       </div>
 
       {/* Progress bar */}
-      <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-3 overflow-hidden">
+      <div className="relative w-full h-3 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden mb-2">
         <div
-          className="h-full bg-gradient-to-r from-brandPurple to-brandLavender transition-all duration-500"
-          style={{ width: `${progress}%` }}
+          className="h-full rounded-full bg-gradient-to-r from-rose-400 to-rose-600 transition-all duration-500"
+          style={{ width: `${percent}%` }}
         />
       </div>
 
-      {/* Input weight */}
-      <div className="flex items-center justify-between mt-3">
-        <input
-          type="number"
-          step="0.1"
-          value={weight ?? ""}
-          onChange={(e) => setWeight(Number(e.target.value))}
-          className="w-24 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-sm"
-          placeholder="Weight"
-        />
-
-        <Button
-          className="rounded-full px-6 py-2 bg-brandPurple text-white font-semibold"
-          onClick={addWeight}
-        >
-          Save
-        </Button>
-      </div>
-
-      {/* Start vs target summary */}
-      <div className="flex justify-between text-[11px] text-slate-500 pt-2">
+      {/* Start and Goal labels */}
+      <div className="flex justify-between text-xs text-slate-500">
         <div>
-          <p className="uppercase tracking-wide text-[10px] text-slate-400">
-            Start
+          <p className="font-medium text-slate-700 dark:text-slate-300">
+            Starting: {startWeight ? `${startWeight.toFixed(1)} kg` : "0 kg"}
           </p>
-          <p className="font-medium">{startWeight} kg</p>
         </div>
-        <div>
-          <p className="uppercase tracking-wide text-[10px] text-slate-400">
-            Target
+        <div className="text-right">
+          <p className="font-medium text-slate-700 dark:text-slate-300">
+            Goal: {goal} kg
           </p>
-          <p className="font-medium">{TARGET_WEIGHT} kg</p>
         </div>
       </div>
     </Card>

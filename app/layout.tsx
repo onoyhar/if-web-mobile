@@ -1,7 +1,6 @@
 "use client";
 
 import "./globals.css";
-import Navbar from "@/components/layout/Navbar";
 import BottomNav from "@/components/BottomNav";
 import { ThemeProvider } from "next-themes";
 import { usePathname } from "next/navigation";
@@ -19,13 +18,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-background text-foreground transition-colors">
+      <body className="min-h-screen bg-slate-50 dark:bg-slate-950 text-foreground transition-colors">
         <ToastProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            {/* Navbar tetap tampil kecuali kalau kamu mau hide */}
-            <Navbar />
-
-            <main className="mx-auto max-w-md px-4 py-4">
+            <main className="mx-auto max-w-md">
               {children}
             </main>
 

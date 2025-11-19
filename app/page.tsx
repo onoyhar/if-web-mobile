@@ -3,65 +3,107 @@
 import FastingTimer from "@/components/trackers/FastingTimer";
 import WaterTracker from "@/components/trackers/WaterTracker";
 import WeightTracker from "@/components/trackers/WeightTracker";
-import Link from "next/link";
-import { useEffect } from "react";
+import WelcomeModal from "@/components/WelcomeModal";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
-export default function HomePage() {
+function HomeContent() {
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [userName, setUserName] = useState<string>("");
+  const searchParams = useSearchParams();
+
   useEffect(() => {
+    logger.debug("HomePage mounted");
+    
     if (typeof window !== "undefined") {
       const onboard = localStorage.getItem("onboarding");
       if (!onboard) {
+        logger.info("No onboarding flag found, redirecting to /onboarding");
         window.location.href = "/onboarding";
+        return;
       }
     }
-  }, []);
+
+    // Check if new user from signup
+    const isNewUser = searchParams.get("newUser") === "true";
+    if (isNewUser) {
+      logger.info("New user detected, checking profile completeness");
+      checkProfileAndShowModal();
+    }
+  }, [searchParams]);
+
+  const checkProfileAndShowModal = async () => {
+    logger.group("Check Profile Completeness");
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      logger.warn("No authenticated user found");
+      logger.groupEnd();
+      return;
+    }
+
+    logger.debug("Fetching user profile", { userId: user.id });
+
+    // Get profile data - use maybeSingle() to handle new users without profile
+    const { data: profile, error } = await supabase
+      .from("users_profile")
+      .select("name")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (error) {
+      logger.error("Failed to fetch profile", error);
+      logger.groupEnd();
+      return;
+    }
+
+    setUserName(profile?.name || "");
+    
+    // Show modal if profile doesn't exist or is incomplete (no name set)
+    if (!profile || !profile.name) {
+      logger.info("Profile incomplete or doesn't exist, showing welcome modal");
+      setShowWelcomeModal(true);
+    } else {
+      logger.info("Profile already complete", { name: profile.name });
+    }
+    
+    logger.groupEnd();
+  };
 
   return (
-    <div className="pb-28 px-4 pt-4 max-w-md mx-auto space-y-6">
-
-      {/* Page Title */}
-      <div className="mt-2 mb-4">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white">
-          Dashboard
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          Track your daily fasting, water, and weight goals.
-        </p>
-      </div>
-
-      {/* Fasting Card */}
-      <div className="animate-fadeIn">
+    <>
+      <div className="pb-24 px-3 pt-3 max-w-md mx-auto space-y-3">
+        {/* Fasting Card */}
         <FastingTimer />
-      </div>
 
-      {/* Water Intake */}
-      <div className="animate-fadeIn delay-100">
+        {/* Water Intake */}
         <WaterTracker />
-      </div>
 
-      {/* Weight Tracker */}
-      <div className="animate-fadeIn delay-200">
+        {/* Weight Tracker */}
         <WeightTracker />
       </div>
 
-      {/* Exercise Library Shortcut */}
-      <div className="animate-fadeIn delay-300">
-        <Link href="/exercise">
-          <div className="rounded-3xl bg-gradient-to-br from-brandLightPurple/50 to-white dark:from-slate-800/60 dark:to-slate-900 p-5 shadow-sm border border-slate-200 dark:border-slate-800 active:scale-[.98] transition-transform">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-800 dark:text-white">
-                  Exercise Library
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Watch guided workout videos
-                </p>
-              </div>
-              <span className="text-brandPurple font-bold text-xl">{">"}</span>
-            </div>
-          </div>
-        </Link>
+      {/* Welcome Modal for New Users */}
+      {showWelcomeModal && (
+        <WelcomeModal 
+          onClose={() => setShowWelcomeModal(false)} 
+          userName={userName}
+        />
+      )}
+    </>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={
+      <div className="pb-24 px-3 pt-3 max-w-md mx-auto space-y-3">
+        <div className="animate-pulse">Loading...</div>
       </div>
-    </div>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 }
