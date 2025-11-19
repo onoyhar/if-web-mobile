@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 import { supabase } from "@/lib/supabase";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
 
     useEffect(() => {
         async function loadGoal() {
@@ -119,7 +121,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-4 pb-16">
+    <div className="space-y-4 pb-16 px-3 pt-4">
       <section>
         <h1 className="text-2xl font-semibold">Settings & Goals</h1>
         <p className="text-sm text-slate-500 dark:text-slate-300 mt-1">
@@ -127,7 +129,44 @@ export default function SettingsPage() {
         </p>
       </section>
 
-      <Card>
+      {/* Theme Settings */}
+      <Card className="rounded-3xl p-5">
+        <h2 className="text-sm font-semibold mb-3">Appearance</h2>
+        <div className="space-y-2">
+          <label className="flex items-center justify-between py-2 cursor-pointer">
+            <span className="text-sm">Light Mode</span>
+            <input
+              type="radio"
+              name="theme"
+              checked={theme === "light"}
+              onChange={() => setTheme("light")}
+              className="w-4 h-4 text-purple-600"
+            />
+          </label>
+          <label className="flex items-center justify-between py-2 cursor-pointer">
+            <span className="text-sm">Dark Mode</span>
+            <input
+              type="radio"
+              name="theme"
+              checked={theme === "dark"}
+              onChange={() => setTheme("dark")}
+              className="w-4 h-4 text-purple-600"
+            />
+          </label>
+          <label className="flex items-center justify-between py-2 cursor-pointer">
+            <span className="text-sm">System Default</span>
+            <input
+              type="radio"
+              name="theme"
+              checked={theme === "system"}
+              onChange={() => setTheme("system")}
+              className="w-4 h-4 text-purple-600"
+            />
+          </label>
+        </div>
+      </Card>
+
+      <Card className="rounded-3xl p-5">
         <div className="space-y-3">
           <div className="space-y-2">
             <label className="text-xs font-medium">Height (cm)</label>
